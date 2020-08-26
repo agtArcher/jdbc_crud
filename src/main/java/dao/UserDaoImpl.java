@@ -1,5 +1,6 @@
 package dao;
 
+import model.Auto;
 import model.User;
 
 import java.util.List;
@@ -22,6 +23,10 @@ public class UserDaoImpl implements UserDao {
     }
 
     public List<User> getAllUsers() {
+        return null;
+    }
+
+    public List<Auto> getAutoForUser(int userId) {
         return null;
     }
 }
