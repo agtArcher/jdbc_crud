@@ -8,6 +8,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDaoImpl implements UserDao {
+
+    UserDaoImpl() {
+    }
+
     public boolean saveUser(User user) {
         try {
             Class.forName("org.postgresql.Driver");
