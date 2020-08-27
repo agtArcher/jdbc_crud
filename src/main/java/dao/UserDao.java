@@ -6,7 +6,7 @@ import model.User;
 import java.util.List;
 
 public interface UserDao {
-    boolean saveUser(User user);
+    int saveUser(User user);
     boolean updateUser(User user);
     boolean deleteUser(int userId);
     User getUser(int userId);

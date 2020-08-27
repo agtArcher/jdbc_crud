@@ -49,7 +49,7 @@ public class AutoCommandExecutor {
                     return;
             }
             if (visible && respond == 4) {
-                save();
+                autos = save(user_id);
             } else if (visible && respond == 5) {
                 autos = undo();
             } else {
@@ -94,15 +94,13 @@ public class AutoCommandExecutor {
         }
         else {
             boolean changed = false;
-            if (confirm("Change model? y/n")) {
-                Helper.print("Enter new value for model");
-                String newModel = Helper.getString();
+            if (Helper.confirm("Change model? y/n")) {
+                String newModel = Helper.getString("Enter new value for model");
                 toUpdate.setModel(newModel);
                 changed = true;
             }
-            if (confirm("Change production year? y/n")) {
-                Helper.print("Enter new value for production year");
-                int prodYear = Helper.getInteger();
+            if (Helper.confirm("Change production year? y/n")) {
+                int prodYear = Helper.getInteger("Enter new value for production year");
                 toUpdate.setProdYear(prodYear);
                 if (!changed)
                     changed = true;
@@ -124,14 +122,13 @@ public class AutoCommandExecutor {
 
     //request auto_id to delete from user, then request confirm. if user input 'y', add auto_id to delete stack
     private void deleteAuto(List<Auto> autos) throws IOException {
-        Helper.print("Enter auto_id to delete from list");
-        int auto_id = Helper.getInteger();
+        int auto_id = Helper.getInteger("Enter auto_id to delete from list");
         Auto autoToDelete = getAutoById(autos, auto_id);
         if (autoToDelete == null) {
             Helper.print("Auto not found. Cancel operation.");
         }
         else {
-            if (confirm("Confirm operation to delete auto y/n")) {
+            if (Helper.confirm("Confirm operation to delete auto y/n")) {
                 deleteStack.push(auto_id);
                 operationStack.push('d');
                 autoListStack.push(autos);
@@ -144,19 +141,29 @@ public class AutoCommandExecutor {
     }
 
     //get dao object from factory and perform all queries, clear undo stack, set visible boolean to false
-    private void save() {
+    private List<Auto> save(int user_id) {
         UserDao dao = UserDaoFactory.getInstance();
         while (!insertStack.isEmpty()) {
-            dao.insertAuto(insertStack.pop());
+            Auto insertedAuto = insertStack.pop();
+            if(!dao.insertAuto(insertedAuto)) {
+                Helper.print("Insert operation failed, info about object: " + insertedAuto.toString());
+            }
         }
         while (!updateStack.isEmpty()) {
-            dao.updateAuto(updateStack.pop());
+            Auto updatedAuto = updateStack.pop();
+            if(!dao.updateAuto(updatedAuto)) {
+                Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
+            }
         }
         while (!deleteStack.isEmpty()) {
-            dao.deleteAuto(deleteStack.pop());
+            int autoId = deleteStack.pop();
+            if(!dao.deleteAuto(autoId)) {
+                Helper.print("Delete operation failed, object's id: " + autoId);
+            }
         }
         autoListStack.clear();
         visible = false;
+        return UserDaoFactory.getInstance().getAutoForUser(user_id);
     }
 
     //return autos list to previous state, if change stack will empty, set visible to false
@@ -190,22 +197,6 @@ public class AutoCommandExecutor {
         return updateAutoList.get(0);
     }
 
-    //request from user answer. if respond start with 'y' return true, if 'n' - false. else wait
-    private boolean confirm(String message) {
-        Helper.print(message);
-        try {
-            while (true) {
-                String confirm = Helper.getString().toLowerCase();
-                if (confirm.startsWith("y")) {
-                    return true;
-                } else if (confirm.startsWith("n")) {
-                    return false;
-                }
-            }
-        } catch (IOException e) {
-            Helper.print("Some exception occured. Try again");
-            return confirm(message);
-        }
-    }
+
 
 }

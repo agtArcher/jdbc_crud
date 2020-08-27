@@ -12,7 +12,7 @@ public class UserDaoImpl implements UserDao {
     UserDaoImpl() {
     }
 
-    public boolean saveUser(User user) {
+    public int saveUser(User user) {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -20,27 +20,34 @@ public class UserDaoImpl implements UserDao {
         }
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into users (first_name, last_name, age) values (?,?,?)");
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into users (first_name, last_name, age) values (?,?,?)", Statement.RETURN_GENERATED_KEYS);
             preparedStatement.setString(1, user.getFirstName());
             preparedStatement.setString(2, user.getLastName());
             preparedStatement.setInt(3, user.getAge());
-            int result = preparedStatement.executeUpdate();
-            if (result > 0 && !user.getAutos().isEmpty()) {
-                preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
-                for (Auto auto : user.getAutos()) {
-                    preparedStatement.setString(1, auto.getModel());
-                    preparedStatement.setInt(2, auto.getProdYear());
-                    preparedStatement.setInt(3, user.getId());
-                    preparedStatement.addBatch();
+            if (preparedStatement.executeUpdate() > 0) {
+                ResultSet rs = preparedStatement.getGeneratedKeys();
+                int id = 0;
+                if (rs.next()) {
+                    id = rs.getInt(1);
+                    if (!user.getAutos().isEmpty()) {
+                        preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
+                        for (Auto auto : user.getAutos()) {
+                            preparedStatement.setString(1, auto.getModel());
+                            preparedStatement.setInt(2, auto.getProdYear());
+                            preparedStatement.setInt(3, user.getId());
+                            preparedStatement.addBatch();
+                        }
+                        preparedStatement.executeBatch();
+                    }
                 }
-                preparedStatement.executeBatch();
+                return id;
             }
-            return result > 0;
+
 
         } catch (SQLException e) {
             e.printStackTrace();
-            return false;
         }
+        return -1;
     }
 
     @Override
