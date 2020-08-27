@@ -1,5 +1,7 @@
 package model;
 
+import java.util.Objects;
+
 public class Auto {
     private int autoId;
     private String model;
@@ -32,7 +34,39 @@ public class Auto {
         return prodYear;
     }
 
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public void setProdYear(int prodYear) {
+        this.prodYear = prodYear;
+    }
+
     public int getUserId() {
         return userId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Auto auto = (Auto) o;
+        return autoId == auto.autoId &&
+                prodYear == auto.prodYear &&
+                userId == auto.userId &&
+                Objects.equals(model, auto.model);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(autoId, model, prodYear, userId);
+    }
+
+    @Override
+    public String toString() {
+        return "autoId=" + autoId +
+                ", model='" + model + '\'' +
+                ", prodYear=" + prodYear +
+                ", userId=" + userId;
     }
 }

@@ -1,7 +1,11 @@
+package executors;
+
 import dao.UserDao;
 import dao.UserDaoFactory;
 import dao.UserDaoImpl;
 import model.User;
+import utils.Helper;
+
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,14 +25,14 @@ public class UserCommandExecutor {
     }
 
     public static boolean updateUser() {
-        /*Helper.print("Input user's id for update:");
-        int user_id = Helper.getInteger();
-        Helper.print("First name:");
-        String firstName = Helper.getString();
-        Helper.print("Last name:");
-        String lastName = Helper.getString();
-        Helper.print("Age:");
-        int age = Helper.getInteger();*/
+        /*utils.Helper.print("Input user's id for update:");
+        int user_id = utils.Helper.getInteger();
+        utils.Helper.print("First name:");
+        String firstName = utils.Helper.getString();
+        utils.Helper.print("Last name:");
+        String lastName = utils.Helper.getString();
+        utils.Helper.print("Age:");
+        int age = utils.Helper.getInteger();*/
 
         return false;
     }

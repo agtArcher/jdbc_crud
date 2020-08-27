@@ -131,7 +131,7 @@ public class UserDaoImpl implements UserDao {
     }
 
     @Override
-    public boolean insertAuto(Auto auto, int userId) {
+    public boolean insertAuto(Auto auto) {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -142,7 +142,7 @@ public class UserDaoImpl implements UserDao {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
             preparedStatement.setString(1, auto.getModel());
             preparedStatement.setInt(2, auto.getProdYear());
-            preparedStatement.setInt(3, userId);
+            preparedStatement.setInt(3, auto.getUserId());
             int result = preparedStatement.executeUpdate();
             return result > 0;
 
