@@ -7,8 +7,8 @@ import java.util.List;
 
 public interface UserDao {
     boolean saveUser(User user);
-    int updateUser(User user);
-    int deleteUser(int userId);
+    boolean updateUser(User user);
+    boolean deleteUser(int userId);
     User getUser(int userId);
     List<User> getAllUsers();
     List<Auto> getAutoForUser(int userId);
