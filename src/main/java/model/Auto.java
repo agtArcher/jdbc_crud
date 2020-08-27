@@ -7,6 +7,7 @@ public class Auto {
     private int userId;
 
     public Auto(String model, int prodYear, int userId) {
+        autoId = -1;
         this.model = model;
         this.prodYear = prodYear;
         this.userId = userId;

@@ -130,6 +130,70 @@ public class UserDaoImpl implements UserDao {
         return user;
     }
 
+    @Override
+    public boolean insertAuto(Auto auto, int userId) {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
+            preparedStatement.setString(1, auto.getModel());
+            preparedStatement.setInt(2, auto.getProdYear());
+            preparedStatement.setInt(3, userId);
+            int result = preparedStatement.executeUpdate();
+            return result > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean updateAuto(Auto auto) {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
+            PreparedStatement preparedStatement = connection.prepareStatement("update autos set model = ?, prod_year = ? where auto_id = ?");
+            preparedStatement.setString(1, auto.getModel());
+            preparedStatement.setInt(2, auto.getProdYear());
+            preparedStatement.setInt(3, auto.getAutoId());
+            int result = preparedStatement.executeUpdate();
+            return result > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deleteAuto(int autoId) {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
+            PreparedStatement preparedStatement = connection.prepareStatement("delete from autos where auto_id = ?");
+            preparedStatement.setInt(1, autoId);
+            int result = preparedStatement.executeUpdate();
+            return result > 0;
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         try {
@@ -160,12 +224,12 @@ public class UserDaoImpl implements UserDao {
         return users;
     }
 
-    private List<Auto> getAutos(ResultSet resultSet, int user_id) throws SQLException {
+    private List<Auto> getAutos(ResultSet autoSet, int user_id) throws SQLException {
         List<Auto> autos = new ArrayList<>();
-        while (resultSet.next()) {
-            int auto_id = resultSet.getInt(1);
-            String model = resultSet.getString(2);
-            int prodYear = resultSet.getInt(3);
+        while (autoSet.next()) {
+            int auto_id = autoSet.getInt(1);
+            String model = autoSet.getString(2);
+            int prodYear = autoSet.getInt(3);
             Auto auto = new Auto(auto_id, model, prodYear, user_id);
             autos.add(auto);
         }

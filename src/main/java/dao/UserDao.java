@@ -10,6 +10,9 @@ public interface UserDao {
     boolean updateUser(User user);
     boolean deleteUser(int userId);
     User getUser(int userId);
+    boolean insertAuto(Auto auto, int userId);
+    boolean updateAuto(Auto auto);
+    boolean deleteAuto(int autoId);
     List<User> getAllUsers();
     List<Auto> getAutoForUser(int userId);
 }
