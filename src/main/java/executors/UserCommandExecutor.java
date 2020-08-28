@@ -2,6 +2,7 @@ package executors;
 
 import dao.UserDao;
 import dao.UserDaoFactory;
+import model.Auto;
 import model.User;
 import utils.Helper;
 
@@ -69,10 +70,7 @@ public class UserCommandExecutor implements CommandExecutor {
             Helper.print("An exception occurred while inserting. Please, repeat");
             return;
         }
-        if(Helper.confirm("User added successfully. Add auto for user? y/n")) {
-            AutoCommandExecutor executor = new AutoCommandExecutor();
-            executor.observe(user.getAutos(), userId);
-        }
+        checkAuto(user.getAutos(), userId, "User added successfully. Observe user's autos list? y/n");
     }
 
     private void updateUser() throws IOException {
@@ -103,13 +101,12 @@ public class UserCommandExecutor implements CommandExecutor {
         }
         if (hasChanged) {
             if (dao.updateUser(currentUser)) {
-                if (Helper.confirm("User data updated. Update autos list?")) {
-                    AutoCommandExecutor executor = new AutoCommandExecutor();
-                    executor.observe(currentUser.getAutos(), currentUser.getId());
-                }
+                checkAuto(currentUser.getAutos(), user_id, "User data updated. Update autos list? y/n");
             } else {
                 Helper.print("An exception was occurred while updating. Please, try again.");
             }
+        } else {
+            checkAuto(currentUser.getAutos(), user_id, "Update autos list? y/n");
         }
     }
 
@@ -128,6 +125,13 @@ public class UserCommandExecutor implements CommandExecutor {
         UserDao dao = UserDaoFactory.getInstance();
         List<User> users = dao.getAllUsers();
         users.forEach(Helper::print);
+    }
+
+    private void checkAuto(List<Auto> autos, int userId, String message) throws IOException {
+        if(Helper.confirm(message)) {
+            AutoCommandExecutor executor = new AutoCommandExecutor();
+            executor.observe(autos, userId);
+        }
     }
 
 }
