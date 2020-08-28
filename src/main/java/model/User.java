@@ -66,10 +66,11 @@ public class User {
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("User: ").append("id=").append(id).append(", firstName='").append(firstName).append('\'').append(", lastName='");
-        builder.append(lastName).append('\'').append(", age=").append(age).append("autos:\n");
+        builder.append(lastName).append('\'').append(", age=").append(age).append("\n").append("Autos:\n");
         for (Auto auto : autos) {
             builder.append(auto).append("\n");
         }
+        builder.delete(builder.lastIndexOf("\n"), builder.length());
         return builder.toString();
     }
 }

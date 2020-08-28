@@ -21,54 +21,67 @@ public class AutoCommandExecutor {
     //if visible is true, save and undo options are available
     private boolean visible = false;
 
-    //intrance method, used to manipulate auto list.
+    //entrance method, used to manipulate auto list.
     //while user not input 0, user can add, update, delete list. User can undo last action until action stack not empty.
-    public void observe(List<Auto> autos, int user_id) throws IOException {
-
+    public void observe(List<Auto> autos, int userId) throws IOException {
+        int respond;
         while (true) {
-            Helper.print("Auto's belongs to user_id " + user_id);
+            Helper.print("Auto's belongs to user's id " + userId);
             autos.forEach(Helper::print);
-            if (visible) {
-                Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(4) Save changes\n(5) Undo last change\n(0) Return");
-            } else {
-                Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(0) Return");
+            if (autos.isEmpty()) {
+                respond = Helper.getInteger("Actions:\n(1)Add new auto\n(0) Return");
+                switch (respond) {
+                    case 1:
+                        addAuto(autos, userId);
+                        break;
+                    case 0:
+                        return;
+                    default:
+                        Helper.print("Incorrect command. Please, try again");
+                }
             }
+            else {
+                if (visible) {
+                    Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(4) Save changes\n(5) Undo last change\n(0) Return");
+                } else {
+                    Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(0) Return");
+                }
 
-            int respond = Helper.getInteger();
-            switch (respond) {
-                case 1:
-                    addAuto(autos, user_id);
-                    break;
-                case 2:
-                    autos = updateAuto(autos);
-                    break;
-                case 3:
-                    deleteAuto(autos);
-                    break;
-                case 0:
-                    return;
+                respond = Helper.getInteger();
+                switch (respond) {
+                    case 1:
+                        addAuto(autos, userId);
+                        break;
+                    case 2:
+                        autos = updateAuto(autos);
+                        break;
+                    case 3:
+                        deleteAuto(autos);
+                        break;
+                    case 0:
+                        checkUnsavedOperations(userId);
+                        return;
+                }
+                if (visible && respond == 4) {
+                    autos = save(userId);
+                } else if (visible && respond == 5) {
+                    autos = undo();
+                } else {
+                    Helper.print("Incorrect command. Please, try again");
+                }
             }
-            if (visible && respond == 4) {
-                autos = save(user_id);
-            } else if (visible && respond == 5) {
-                autos = undo();
-            } else {
-                Helper.print("Incorrect command. Please, try again");
-            }
-
         }
-
     }
 
     //request model and prodYear from user, create new Auto and add to autos list and insert stack
-    private void addAuto(List<Auto> autos, int user_id) {
+    private void addAuto(List<Auto> autos, int userId) {
 
         try {
             Helper.print("Model:");
             String model = Helper.getString();
             Helper.print("Production year:");
             int prodYear = Helper.getInteger();
-            Auto auto = new Auto(model, prodYear, user_id);
+            Auto auto = new Auto(model, prodYear, userId);
             insertStack.push(auto);
             operationStack.push('i');
             autoListStack.push(autos);
@@ -85,10 +98,10 @@ public class AutoCommandExecutor {
     //if no change found, cancel update and return to observe method
     //if change found, add updated auto to update stack
     private List<Auto> updateAuto(List<Auto> autos) throws IOException {
-        Helper.print("Enter auto_id to update info");
-        int auto_id = Helper.getInteger();
+        Helper.print("Enter autoId to update info");
+        int autoId = Helper.getInteger();
 
-        Auto toUpdate = getAutoById(autos, auto_id);
+        Auto toUpdate = getAutoById(autos, autoId);
         if (toUpdate == null) {
             Helper.print("Auto not found for update. Cancel operation");
         }
@@ -109,7 +122,7 @@ public class AutoCommandExecutor {
                 updateStack.push(toUpdate);
                 operationStack.push('u');
                 autoListStack.push(autos);
-                autos = autos.stream().map(o -> o.getAutoId() == auto_id ? toUpdate : o).collect(Collectors.toList());
+                autos = autos.stream().map(o -> o.getAutoId() == autoId ? toUpdate : o).collect(Collectors.toList());
                 Helper.print("Update command added to query.");
                 if (!visible)
                     visible = true;
@@ -122,14 +135,14 @@ public class AutoCommandExecutor {
 
     //request auto_id to delete from user, then request confirm. if user input 'y', add auto_id to delete stack
     private void deleteAuto(List<Auto> autos) throws IOException {
-        int auto_id = Helper.getInteger("Enter auto_id to delete from list");
-        Auto autoToDelete = getAutoById(autos, auto_id);
+        int autoId = Helper.getInteger("Enter autoId to delete from list");
+        Auto autoToDelete = getAutoById(autos, autoId);
         if (autoToDelete == null) {
             Helper.print("Auto not found. Cancel operation.");
         }
         else {
             if (Helper.confirm("Confirm operation to delete auto y/n")) {
-                deleteStack.push(auto_id);
+                deleteStack.push(autoId);
                 operationStack.push('d');
                 autoListStack.push(autos);
                 autos.remove(autoToDelete);
@@ -141,20 +154,23 @@ public class AutoCommandExecutor {
     }
 
     //get dao object from factory and perform all queries, clear undo stack, set visible boolean to false
-    private List<Auto> save(int user_id) {
+    private List<Auto> save(int userId) {
         UserDao dao = UserDaoFactory.getInstance();
+        Helper.print("Inserting...");
         while (!insertStack.isEmpty()) {
             Auto insertedAuto = insertStack.pop();
             if(!dao.insertAuto(insertedAuto)) {
                 Helper.print("Insert operation failed, info about object: " + insertedAuto.toString());
             }
         }
+        Helper.print("Updating...");
         while (!updateStack.isEmpty()) {
             Auto updatedAuto = updateStack.pop();
             if(!dao.updateAuto(updatedAuto)) {
                 Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
             }
         }
+        Helper.print("Deleting...");
         while (!deleteStack.isEmpty()) {
             int autoId = deleteStack.pop();
             if(!dao.deleteAuto(autoId)) {
@@ -163,7 +179,8 @@ public class AutoCommandExecutor {
         }
         autoListStack.clear();
         visible = false;
-        return UserDaoFactory.getInstance().getAutoForUser(user_id);
+        Helper.print("Saved!");
+        return UserDaoFactory.getInstance().getAutoForUser(userId);
     }
 
     //return autos list to previous state, if change stack will empty, set visible to false
@@ -184,19 +201,29 @@ public class AutoCommandExecutor {
         if (autoListStack.isEmpty()) {
             visible = false;
         }
+        Helper.print("Undo complete!");
         return autos;
     }
 
     //get auto by id from list
-    private Auto getAutoById(List<Auto> autos, int auto_id) {
+    private Auto getAutoById(List<Auto> autos, int autoId) {
 
-        List<Auto> updateAutoList = autos.stream().filter(i -> i.getAutoId() == auto_id).collect(Collectors.toList());
+        List<Auto> updateAutoList = autos.stream().filter(i -> i.getAutoId() == autoId).collect(Collectors.toList());
         if (updateAutoList.isEmpty()) {
             return null;
         }
         return updateAutoList.get(0);
     }
 
+
+    private void checkUnsavedOperations(int userId) {
+        if (autoListStack.isEmpty()) {
+            return;
+        }
+        if (Helper.confirm("Unsaved data found. Save changes? y/n")) {
+            save(userId);
+        }
+    }
 
 
 }
