@@ -61,4 +61,15 @@ public class User {
     public void setAutos(List<Auto> autos) {
         this.autos = autos;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+        builder.append("User: ").append("id=").append(id).append(", firstName='").append(firstName).append('\'').append(", lastName='");
+        builder.append(lastName).append('\'').append(", age=").append(age).append("autos:\n");
+        for (Auto auto : autos) {
+            builder.append(auto).append("\n");
+        }
+        return builder.toString();
+    }
 }
