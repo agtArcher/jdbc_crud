@@ -109,6 +109,8 @@ public class AutoCommandExecutor {
             int prodYear = Helper.getInteger("Production year:");
             count--;
             Auto auto = new Auto(count, model, prodYear, userId);
+            operationStack.push('t');
+            insertListStack.push(new ArrayList<>(insertAutoList));
             insertAutoList.add(auto);
             Helper.print("Insert command added to query.");
             if (!visible)
@@ -118,7 +120,7 @@ public class AutoCommandExecutor {
         }
     }
 
-    //request auto_id from user, then request confirm to change data, change field if user input 'y'
+    //request auto_id from user, get copy of auto from list by id then request confirm to change data, change field if user input 'y'
     //if no change found, cancel update and return to observe method
     //if change found, add updated auto to update stack
     //if auto id < 0, add 't' to operation stack and update auto in insertList
@@ -126,43 +128,50 @@ public class AutoCommandExecutor {
         try {
             Helper.print("Enter autoId to update info");
             int autoId = Helper.getInteger();
-
+            List<Auto> copyAutos = new ArrayList<>(autos);
             Auto toUpdate = getAutoById(autos, autoId);
             if (toUpdate == null) {
                 Helper.print("Auto not found for update. Cancel operation");
             }
             else {
-                boolean changed = false;
+                boolean hadChanged = false;
+                //if value had changed, set hadChanged to true
                 if (Helper.confirm("Change model? y/n")) {
                     String newModel = Helper.getString("Enter new value for model");
-                    toUpdate.setModel(newModel);
-                    changed = true;
+                    if (!toUpdate.getModel().equals(newModel)) {
+                        toUpdate.setModel(newModel);
+                        hadChanged = true;
+                    }
                 }
                 if (Helper.confirm("Change production year? y/n")) {
                     int prodYear = Helper.getInteger("Enter new value for production year");
-                    toUpdate.setProdYear(prodYear);
-                    if (!changed)
-                        changed = true;
+                    if (toUpdate.getProdYear() != prodYear) {
+                        toUpdate.setProdYear(prodYear);
+                        if (!hadChanged)
+                            hadChanged = true;
+                    }
                 }
-                if (changed && autoId > 0) {
+                if (hadChanged && autoId > 0) {
                     updateStack.push(toUpdate);
                     operationStack.push('u');
-                    autoListStack.push(autos);
+                    autoListStack.push(copyAutos);
                     autos = autos.stream().map(o -> o.getAutoId() == autoId ? toUpdate : o).collect(Collectors.toList());
                     Helper.print("Update command added to query.");
-                    if (!visible)
+                    if (!visible) {
                         visible = true;
-                } else if (changed && autoId < 0) {
+                    }
+                } else if (hadChanged && autoId < 0) {
                     operationStack.push('t');
-                    insertListStack.push(insertAutoList);
+                    insertListStack.push(new ArrayList<>(insertAutoList));
                     insertAutoList = insertAutoList.stream().map(o -> o.getAutoId() == autoId ? toUpdate : o).collect(Collectors.toList());
                     Helper.print("Auto updated.");
-                }
-                else {
+                    if (!visible) {
+                        visible = true;
+                    }
+                } else {
                     Helper.print("No change found");
                 }
             }
-            return autos;
         } catch (IOException e) {
             Helper.print("An exception occurred while updating auto. Please, try again.");
         }
@@ -170,6 +179,7 @@ public class AutoCommandExecutor {
     }
 
     //request auto_id to delete from user, then request confirm. if user input 'y', add auto_id to delete stack
+    //save copy of list in appropriate stack
     private void deleteAuto(List<Auto> autos) {
         try {
             int autoId = Helper.getInteger("Enter autoId to delete from list");
@@ -182,16 +192,20 @@ public class AutoCommandExecutor {
                     if (autoId > 0) {
                         deleteStack.push(autoId);
                         operationStack.push('d');
-                        autoListStack.push(autos);
+                        autoListStack.push(new ArrayList<>(autos));
                         autos.remove(autoToDelete);
                         Helper.print("Delete command added to query.");
-                        if (!visible)
+                        if (!visible) {
                             visible = true;
+                        }
                     } else if (autoId < 0) {
+                        insertListStack.push(new ArrayList<>(insertAutoList));
                         operationStack.push('t');
-                        insertListStack.push(insertAutoList);
                         insertAutoList.remove(autoToDelete);
                         Helper.print("Auto deleted.");
+                        if (!visible) {
+                            visible = true;
+                        }
                     }
                 }
             }
@@ -243,7 +257,7 @@ public class AutoCommandExecutor {
         char command = operationStack.pop();
         switch (command) {
             case 't':
-                insertAutoList = insertListStack.pop();
+                setInsertAutoList(insertListStack.pop());
                 break;
             case 'u':
                 updateStack.pop();
@@ -254,14 +268,14 @@ public class AutoCommandExecutor {
                 autos = autoListStack.pop();
                 break;
         }
-        if (autoListStack.isEmpty()) {
+        if (autoListStack.isEmpty() && insertListStack.isEmpty()) {
             visible = false;
         }
         Helper.print("Undo complete!");
         return autos;
     }
 
-    //get auto by id from list
+    //get copy of auto by id from list for correct save list in listStack
     private Auto getAutoById(List<Auto> autos, int autoId) {
         List<Auto> updateAutoList = null;
         if (autoId > 0) {
@@ -273,7 +287,8 @@ public class AutoCommandExecutor {
         if (updateAutoList == null || updateAutoList.isEmpty()) {
             return null;
         }
-        return updateAutoList.get(0);
+        Auto origAuto = updateAutoList.get(0);
+        return new Auto(origAuto.getAutoId(), origAuto.getModel(), origAuto.getProdYear(), origAuto.getUserId());
     }
 
     //check for unsaved actions and ask for save actions
@@ -285,5 +300,8 @@ public class AutoCommandExecutor {
         }
     }
 
-
+    //private setter to change insertList
+    private void setInsertAutoList(List<Auto> insertAutoList) {
+        this.insertAutoList = insertAutoList;
+    }
 }

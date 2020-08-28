@@ -8,13 +8,6 @@ public class Auto {
     private int prodYear;
     private int userId;
 
-    public Auto(String model, int prodYear, int userId) {
-        autoId = -1;
-        this.model = model;
-        this.prodYear = prodYear;
-        this.userId = userId;
-    }
-
     public Auto(int autoId, String model, int prodYear, int userId) {
         this.autoId = autoId;
         this.model = model;

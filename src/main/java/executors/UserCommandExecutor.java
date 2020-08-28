@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.util.List;
 
 public class UserCommandExecutor implements CommandExecutor {
+    //public method for entry to modify users table. Contains entry to modify user's auto list
     public void observe() {
         try {
             while (true) {
@@ -133,5 +134,4 @@ public class UserCommandExecutor implements CommandExecutor {
             executor.observe(autos, userId);
         }
     }
-
 }
