@@ -99,9 +99,10 @@ public class AutoModelImpl implements AutoModel {
         UserDao dao = UserDaoFactory.getInstance();
         if (!insertAutoList.isEmpty()) {
             Helper.print("Inserting...");
-            for (Auto insertedAuto : insertAutoList) {
-                if(!dao.insertAuto(insertedAuto)) {
-                    Helper.print("Insert operation failed, info about object: " + insertedAuto.toString());
+            boolean[] queryResult = dao.insertAllAuto(insertAutoList);
+            for (int i = 0; i < queryResult.length; i++) {
+                if (!queryResult[i]) {
+                    Helper.print("Insert operation failed, info about object: " + insertAutoList.get(i).toString());
                 }
             }
             insertAutoList.clear();

@@ -5,6 +5,7 @@ import model.User;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class UserDaoImpl implements UserDao {
@@ -157,6 +158,34 @@ public class UserDaoImpl implements UserDao {
             e.printStackTrace();
             return false;
         }
+    }
+
+    @Override
+    public boolean[] insertAllAuto(Collection<Auto> autos) {
+        try {
+            Class.forName("org.postgresql.Driver");
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        boolean[] queryResults = new boolean[autos.size()];
+        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
+            PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
+            for (Auto auto : autos) {
+
+                preparedStatement.setString(1, auto.getModel());
+                preparedStatement.setInt(2, auto.getProdYear());
+                preparedStatement.setInt(3, auto.getUserId());
+                preparedStatement.addBatch();
+            }
+            int[] batchResult = preparedStatement.executeBatch();
+            for (int i = 0; i < batchResult.length; i++) {
+                queryResults[i] = batchResult[i] > 0;
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return queryResults;
     }
 
     @Override

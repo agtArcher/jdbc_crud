@@ -45,7 +45,7 @@ class UpdateCommand implements Command {
                 } else {
                     Helper.print("An exception was occurred while updating. Please, try again.");
                 }
-            } if(Helper.confirm("Update autos list? y/n")) {
+            } else if(Helper.confirm("Update autos list? y/n")) {
                 new AutoExplorer(currentUser.getAutos(), userId).explore();
             }
         } catch (IOException e) {
