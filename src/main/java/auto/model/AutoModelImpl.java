@@ -1,6 +1,5 @@
 package auto.model;
 
-import auto.model.AutoModel;
 import dao.UserDao;
 import dao.UserDaoFactory;
 import model.Auto;
@@ -71,8 +70,6 @@ public class AutoModelImpl implements AutoModel {
             }
         }
     }
-
-
 
     @Override
     public void deleteAuto(Auto auto) {
