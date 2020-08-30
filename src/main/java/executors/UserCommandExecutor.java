@@ -1,9 +1,11 @@
 package executors;
 
+import controller.AutoController;
 import dao.UserDao;
 import dao.UserDaoFactory;
 import model.Auto;
 import model.User;
+import services.AutoModelImpl;
 import utils.Helper;
 
 import java.io.IOException;
@@ -130,8 +132,7 @@ public class UserCommandExecutor implements CommandExecutor {
 
     private void checkAuto(List<Auto> autos, int userId, String message) throws IOException {
         if(Helper.confirm(message)) {
-            AutoCommandExecutor executor = new AutoCommandExecutor();
-            executor.observe(autos, userId);
+            new AutoExplorer(autos, userId).explore();
         }
     }
 }
