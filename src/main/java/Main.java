@@ -1,11 +1,8 @@
-import executors.CommandExecutor;
-import executors.UserCommandExecutor;
-
+import user.UserExplorer;
 
 public class Main {
     public static void main(String[] args) {
-        CommandExecutor executor = new UserCommandExecutor();
-        executor.observe();
+        new UserExplorer().explore();
     }
 
 }

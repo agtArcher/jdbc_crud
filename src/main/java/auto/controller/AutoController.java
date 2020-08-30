@@ -1,8 +1,8 @@
-package controller;
+package auto.controller;
 
-import executors.AutoExplorer;
+import auto.AutoExplorer;
 import model.Auto;
-import services.AutoModel;
+import auto.model.AutoModel;
 
 import java.util.List;
 

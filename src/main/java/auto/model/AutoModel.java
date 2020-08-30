@@ -1,4 +1,4 @@
-package services;
+package auto.model;
 
 import model.Auto;
 

@@ -1,5 +1,6 @@
-package services;
+package auto.model;
 
+import auto.model.AutoModel;
 import dao.UserDao;
 import dao.UserDaoFactory;
 import model.Auto;

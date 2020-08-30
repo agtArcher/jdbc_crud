@@ -1,8 +1,8 @@
-package executors;
+package auto;
 
-import controller.AutoController;
+import auto.controller.AutoController;
 import model.Auto;
-import services.AutoModelImpl;
+import auto.model.AutoModelImpl;
 import utils.Helper;
 
 import java.io.IOException;
