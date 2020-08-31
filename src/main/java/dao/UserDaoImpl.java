@@ -5,10 +5,9 @@ import model.User;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
-public class UserDaoImpl implements UserDao {
+class UserDaoImpl implements UserDao {
 
     UserDaoImpl() {
     }
@@ -126,10 +125,8 @@ public class UserDaoImpl implements UserDao {
                 String firstName = resultSet.getString("first_name");
                 String lastName = resultSet.getString("last_name");
                 int age = resultSet.getInt("age");
-                preparedStatement = connection.prepareStatement("select * from autos where user_id = ?");
-                preparedStatement.setInt(1, id);
-                resultSet = preparedStatement.executeQuery();
-                List<Auto> autos = getAutos(resultSet, id);
+
+                List<Auto> autos = getAutoForUser(id);
                 user = new User(id, firstName, lastName, age, autos);
             }
         } catch (SQLException e) {
@@ -138,97 +135,7 @@ public class UserDaoImpl implements UserDao {
         return user;
     }
 
-    @Override
-    public boolean insertAuto(Auto auto) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
-            preparedStatement.setString(1, auto.getModel());
-            preparedStatement.setInt(2, auto.getProdYear());
-            preparedStatement.setInt(3, auto.getUserId());
-            int result = preparedStatement.executeUpdate();
-            return result > 0;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
-    public boolean[] insertAllAuto(Collection<Auto> autos) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        boolean[] queryResults = new boolean[autos.size()];
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
-            PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
-            for (Auto auto : autos) {
-
-                preparedStatement.setString(1, auto.getModel());
-                preparedStatement.setInt(2, auto.getProdYear());
-                preparedStatement.setInt(3, auto.getUserId());
-                preparedStatement.addBatch();
-            }
-            int[] batchResult = preparedStatement.executeBatch();
-            for (int i = 0; i < batchResult.length; i++) {
-                queryResults[i] = batchResult[i] > 0;
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return queryResults;
-    }
-
-    @Override
-    public boolean updateAuto(Auto auto) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
-            PreparedStatement preparedStatement = connection.prepareStatement("update autos set model = ?, prod_year = ? where auto_id = ?");
-            preparedStatement.setString(1, auto.getModel());
-            preparedStatement.setInt(2, auto.getProdYear());
-            preparedStatement.setInt(3, auto.getAutoId());
-            int result = preparedStatement.executeUpdate();
-            return result > 0;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    @Override
-    public boolean deleteAuto(int autoId) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-        try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
-            PreparedStatement preparedStatement = connection.prepareStatement("delete from autos where auto_id = ?");
-            preparedStatement.setInt(1, autoId);
-            int result = preparedStatement.executeUpdate();
-            return result > 0;
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();

@@ -1,7 +1,7 @@
 package user.command;
 
 import dao.UserDao;
-import dao.UserDaoFactory;
+import dao.DaoFactory;
 import auto.AutoExplorer;
 import model.User;
 import utils.Helper;
@@ -13,7 +13,7 @@ class UpdateCommand implements Command {
     public void execute() {
         try {
             int userId = Helper.getInteger("Input user's id for update:");
-            UserDao dao = UserDaoFactory.getInstance();
+            UserDao dao = DaoFactory.getUserDao();
             User currentUser = dao.getUser(userId);
             boolean hasChanged = false;
             if (currentUser == null) {

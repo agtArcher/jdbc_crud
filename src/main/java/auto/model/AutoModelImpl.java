@@ -1,7 +1,7 @@
 package auto.model;
 
-import dao.UserDao;
-import dao.UserDaoFactory;
+import dao.AutoDao;
+import dao.DaoFactory;
 import model.Auto;
 import utils.Helper;
 
@@ -96,7 +96,7 @@ public class AutoModelImpl implements AutoModel {
     //get dao object from factory and perform all queries, clear undo stack, set visible boolean to false
     @Override
     public void save(int userId) {
-        UserDao dao = UserDaoFactory.getInstance();
+        AutoDao dao = DaoFactory.getAutoDao();
         if (!insertAutoList.isEmpty()) {
             Helper.print("Inserting...");
             boolean[] queryResult = dao.insertAllAuto(insertAutoList);
@@ -130,7 +130,7 @@ public class AutoModelImpl implements AutoModel {
         autoListStack.clear();
         visible = false;
         Helper.print("Saved!");
-        autos = UserDaoFactory.getInstance().getAutoForUser(userId);
+        autos = DaoFactory.getUserDao().getAutoForUser(userId);
     }
 
     //return autos list to previous state, if change stack will empty, set visible to false
