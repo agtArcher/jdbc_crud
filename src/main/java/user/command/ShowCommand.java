@@ -1,7 +1,7 @@
 package user.command;
 
 import dao.UserDao;
-import dao.UserDaoFactory;
+import dao.DaoFactory;
 import model.User;
 import utils.Helper;
 
@@ -12,7 +12,7 @@ class ShowCommand implements Command {
     public void execute() {
         try {
             int userId = Helper.getInteger("Please, enter user's id:");
-            UserDao dao = UserDaoFactory.getInstance();
+            UserDao dao = DaoFactory.getUserDao();
             User currentUser = dao.getUser(userId);
             if (currentUser == null) {
                 Helper.print("User not found. Return...");

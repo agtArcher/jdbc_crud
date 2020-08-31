@@ -1,7 +1,7 @@
 package user.command;
 
 import dao.UserDao;
-import dao.UserDaoFactory;
+import dao.DaoFactory;
 import model.User;
 import utils.Helper;
 
@@ -12,7 +12,7 @@ class DeleteCommand implements Command {
     public void execute() {
         try {
             int user_id = Helper.getInteger("Enter user's id for deleting: ");
-            UserDao dao = UserDaoFactory.getInstance();
+            UserDao dao = DaoFactory.getUserDao();
             User currentUser = dao.getUser(user_id);
             if (currentUser == null) {
                 Helper.print("User not found. Cancel operation.");

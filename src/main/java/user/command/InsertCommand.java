@@ -1,6 +1,6 @@
 package user.command;
 
-import dao.UserDaoFactory;
+import dao.DaoFactory;
 import auto.AutoExplorer;
 import model.User;
 import utils.Helper;
@@ -16,7 +16,7 @@ class InsertCommand implements Command {
             int age = Helper.getInteger("Age:");
 
             User user = new User(firstName, lastName, age);
-            int userId = UserDaoFactory.getInstance().saveUser(user);
+            int userId = DaoFactory.getUserDao().saveUser(user);
             if (userId == 0) {
                 Helper.print("An exception occurred while inserting. Please, repeat");
                 return;

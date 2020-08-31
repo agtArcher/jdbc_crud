@@ -70,7 +70,6 @@ public class User {
         for (Auto auto : autos) {
             builder.append(auto).append("\n");
         }
-        builder.delete(builder.lastIndexOf("\n"), builder.length());
         return builder.toString();
     }
 }
