@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 public class Helper {
-    private static BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+    private static final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
     private static boolean isInteger(String possibleNumber) {
         try {
@@ -57,7 +57,7 @@ public class Helper {
                 }
             }
         } catch (IOException e) {
-            print("Some exception occured. Try again");
+            print("Some exception occurred. Try again");
             return confirm(message);
         }
     }
