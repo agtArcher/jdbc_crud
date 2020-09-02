@@ -6,22 +6,14 @@ import model.Auto;
 import utils.Helper;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class AutoModelImpl implements AutoModel {
-    //store previous states of autos list
-    private final Stack<List<Auto>> autoListStack = new Stack<>();
-
-    private final Stack<Auto> updateStack = new Stack<>();
-    //store previous states of insert list
-    private final Stack<List<Auto>> insertListStack = new Stack<>();
-    //store auto_id for deleting
-    private final Stack<Integer> deleteStack = new Stack<>();
-    //save 'd' for delete operation, 'u' for update and 't' for actions
-    //with insertAutoList
-    private final Stack<Character> operationStack = new Stack<>();
+    //contains backup list depends from command type and changed auto inside
+    private final Stack<AutoDto> operationVault = new Stack<>();
     //list for unsaved autos to separate update and delete
     private List<Auto> insertAutoList = new ArrayList<>();
     //if visible is true, save and undo options are available
@@ -39,30 +31,24 @@ public class AutoModelImpl implements AutoModel {
     public void addAuto(int userId, String model, int prodYear) {
         count--;
         Auto auto = new Auto(count, model, prodYear, userId);
-        operationStack.push('t');
-        insertListStack.push(new ArrayList<>(insertAutoList));
+        operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), auto, CommandType.INSERT));
         insertAutoList.add(auto);
         Helper.print("Insert command added to query.");
         if (!visible)
             visible = true;
     }
 
-
     @Override
     public void updateAuto(Auto auto) {
         if (auto.getAutoId() > 0) {
-            List<Auto> copyAutos = new ArrayList<>(autos);
-            updateStack.push(auto);
-            operationStack.push('u');
-            autoListStack.push(copyAutos);
+            operationVault.push(new AutoDto(new ArrayList<>(autos), null, auto, CommandType.UPDATE));
             autos = autos.stream().map(o -> o.getAutoId() == auto.getAutoId() ? auto : o).collect(Collectors.toList());
             Helper.print("Update command added to query.");
             if (!visible) {
                 visible = true;
             }
         } else if (auto.getAutoId() < 0) {
-            operationStack.push('t');
-            insertListStack.push(new ArrayList<>(insertAutoList));
+            operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), null, CommandType.ACTION_TEMPORARY));
             insertAutoList = insertAutoList.stream().map(o -> o.getAutoId() == auto.getAutoId() ? auto : o).collect(Collectors.toList());
             Helper.print("Auto updated.");
             if (!visible) {
@@ -74,17 +60,14 @@ public class AutoModelImpl implements AutoModel {
     @Override
     public void deleteAuto(Auto auto) {
         if (auto.getAutoId() > 0) {
-            deleteStack.push(auto.getAutoId());
-            operationStack.push('d');
-            autoListStack.push(new ArrayList<>(autos));
+            operationVault.push(new AutoDto(new ArrayList<>(autos), null, auto, CommandType.DELETE));
             autos.remove(auto);
             Helper.print("Delete command added to query.");
             if (!visible) {
                 visible = true;
             }
         } else if (auto.getAutoId() < 0) {
-            insertListStack.push(new ArrayList<>(insertAutoList));
-            operationStack.push('t');
+            operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), null, CommandType.ACTION_TEMPORARY));
             insertAutoList.remove(auto);
             Helper.print("Auto deleted.");
             if (!visible) {
@@ -106,30 +89,36 @@ public class AutoModelImpl implements AutoModel {
                 }
             }
             insertAutoList.clear();
-            insertListStack.clear();
             count = 0;
+            operationVault.removeIf(x -> x.getCommandType() == CommandType.INSERT || x.getCommandType() == CommandType.ACTION_TEMPORARY);
         }
-        if (!updateStack.isEmpty()) {
+
+        List<AutoDto> toUpdate = operationVault.stream().filter(x -> x.getCommandType() == CommandType.UPDATE).collect(Collectors.toList());
+        Collections.reverse(toUpdate);
+        if (!toUpdate.isEmpty()) {
             Helper.print("Updating...");
-            while (!updateStack.isEmpty()) {
-                Auto updatedAuto = updateStack.pop();
+            while (!toUpdate.isEmpty()) {
+                Auto updatedAuto = toUpdate.get(0).getChangedAuto();
                 if(!dao.updateAuto(updatedAuto)) {
                     Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
                 } else {
-                    updateStack.removeIf(x -> x.getAutoId() == updatedAuto.getAutoId());
+                    toUpdate.removeIf(x -> x.getChangedAuto().getAutoId() == updatedAuto.getAutoId());
                 }
             }
+            operationVault.removeIf(x -> x.getCommandType() == CommandType.UPDATE);
         }
-        if (!deleteStack.isEmpty()) {
+
+        List<AutoDto> toDelete = operationVault.stream().filter(x -> x.getCommandType() == CommandType.DELETE).collect(Collectors.toList());
+        if (!toDelete.isEmpty()) {
             Helper.print("Deleting...");
-            while (!deleteStack.isEmpty()) {
-                int autoId = deleteStack.pop();
+            for (AutoDto autoDto : toDelete) {
+                int autoId = autoDto.getChangedAuto().getAutoId();
                 if(!dao.deleteAuto(autoId)) {
                     Helper.print("Delete operation failed, object's id: " + autoId);
                 }
             }
         }
-        autoListStack.clear();
+        operationVault.clear();
         visible = false;
         Helper.print("Saved!");
         autos = DaoFactory.getUserDao().getAutoForUser(userId);
@@ -138,30 +127,23 @@ public class AutoModelImpl implements AutoModel {
     //return autos list to previous state, if change stack will empty, set visible to false
     @Override
     public void undo() {
-        char command = operationStack.pop();
-        switch (command) {
-            case 't':
-                setInsertAutoList(insertListStack.pop());
+        AutoDto undoAutoDto = operationVault.pop();
+        switch (undoAutoDto.getCommandType()) {
+            case INSERT:
+            case ACTION_TEMPORARY:
+                insertAutoList = undoAutoDto.getBackupInsertList();
                 break;
-            case 'u':
-                updateStack.pop();
-                autos = autoListStack.pop();
-                break;
-            case 'd':
-                deleteStack.pop();
-                autos = autoListStack.pop();
+            case DELETE:
+            case UPDATE:
+                autos = undoAutoDto.getBackupList();
                 break;
         }
-        if (autoListStack.isEmpty() && insertListStack.isEmpty()) {
-            visible = false;
-        }
-        Helper.print("Undo complete!");
     }
 
     //check for unsaved actions and ask for save actions
     @Override
     public void checkUnsavedOperations(int userId) {
-        if (!autoListStack.isEmpty() || !insertAutoList.isEmpty()) {
+        if (!operationVault.isEmpty()) {
             if (Helper.confirm("Unsaved data found. Save changes? y/n")) {
                 save(userId);
             }
@@ -177,7 +159,6 @@ public class AutoModelImpl implements AutoModel {
     public List<Auto> getInsertList() {
         return insertAutoList;
     }
-
 
     @Override
     //get copy of auto by id from list for correct save list in listStack
@@ -199,10 +180,4 @@ public class AutoModelImpl implements AutoModel {
     public List<Auto> getAutos() {
         return autos;
     }
-
-    private void setInsertAutoList(List<Auto> insertAutoList) {
-        this.insertAutoList = insertAutoList;
-    }
-
-
 }
