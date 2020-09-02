@@ -115,6 +115,8 @@ public class AutoModelImpl implements AutoModel {
                 Auto updatedAuto = updateStack.pop();
                 if(!dao.updateAuto(updatedAuto)) {
                     Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
+                } else {
+                    updateStack.removeIf(x -> x.getAutoId() == updatedAuto.getAutoId());
                 }
             }
         }
