@@ -1,6 +1,7 @@
 package auto;
 
 import auto.controller.AutoController;
+import exception.ObjectNotFoundException;
 import model.Auto;
 import auto.model.AutoModelImpl;
 import utils.Helper;
@@ -121,35 +122,32 @@ public class AutoExplorer {
             int autoId = Helper.getInteger();
 
             Auto toUpdate = controller.getAutoById(autoId);
-            if (toUpdate == null) {
-                Helper.print("Auto not found for update. Cancel operation");
+            boolean hadChanged = false;
+            //if value had changed, set hadChanged to true
+            if (Helper.confirm("Change model? y/n")) {
+                String newModel = Helper.getString("Enter new value for model");
+                if (!toUpdate.getModel().equals(newModel)) {
+                    toUpdate.setModel(newModel);
+                    hadChanged = true;
+                }
             }
-            else {
-                boolean hadChanged = false;
-                //if value had changed, set hadChanged to true
-                if (Helper.confirm("Change model? y/n")) {
-                    String newModel = Helper.getString("Enter new value for model");
-                    if (!toUpdate.getModel().equals(newModel)) {
-                        toUpdate.setModel(newModel);
+            if (Helper.confirm("Change production year? y/n")) {
+                int prodYear = Helper.getInteger("Enter new value for production year");
+                if (toUpdate.getProdYear() != prodYear) {
+                    toUpdate.setProdYear(prodYear);
+                    if (!hadChanged)
                         hadChanged = true;
-                    }
                 }
-                if (Helper.confirm("Change production year? y/n")) {
-                    int prodYear = Helper.getInteger("Enter new value for production year");
-                    if (toUpdate.getProdYear() != prodYear) {
-                        toUpdate.setProdYear(prodYear);
-                        if (!hadChanged)
-                            hadChanged = true;
-                    }
-                }
-                if (hadChanged) {
-                    controller.updateAuto(toUpdate);
-                } else {
-                    Helper.print("No change found");
-                }
+            }
+            if (hadChanged) {
+                controller.updateAuto(toUpdate);
+            } else {
+                Helper.print("No change found");
             }
         } catch (IOException e) {
             Helper.print("An exception occurred while updating auto. Please, try again.");
+        } catch (ObjectNotFoundException e) {
+            Helper.print("Auto for update not found. Cancel operation");
         }
     }
 
@@ -157,15 +155,13 @@ public class AutoExplorer {
         try {
             int autoId = Helper.getInteger("Enter autoId to delete from list");
             Auto autoToDelete = controller.getAutoById(autoId);
-            if (autoToDelete == null) {
-                Helper.print("Auto not found. Cancel operation.");
-            } else {
-                if (Helper.confirm("Confirm operation to delete auto y/n")) {
-                    controller.deleteAuto(autoToDelete);
-                }
+            if (Helper.confirm("Confirm operation to delete auto y/n")) {
+                controller.deleteAuto(autoToDelete);
             }
         } catch (IOException e) {
             Helper.print("An exception occurred while deleting auto. Please, try again.");
+        } catch (ObjectNotFoundException e) {
+            Helper.print("Auto for delete not found. Cancel operation.");
         }
     }
 

@@ -5,24 +5,20 @@ import model.Auto;
 import java.util.List;
 
 class AutoDto {
-    private final List<Auto> backupList;
-    private final List<Auto> backupInsertList;
+    //contains backup of autos list or insertList depends from commandType.
+    //if commandType is insert or temporary, saves insertList, else - autos list.
+    private final List<Auto> listBackup;
     private final Auto changedAuto;
     private final CommandType commandType;
 
-    public AutoDto(List<Auto> backupList, List<Auto> backupInsertList, Auto changedAuto, CommandType commandType) {
-        this.backupList = backupList;
-        this.backupInsertList = backupInsertList;
+    public AutoDto(List<Auto> listBackup, Auto changedAuto, CommandType commandType) {
+        this.listBackup = listBackup;
         this.changedAuto = changedAuto;
         this.commandType = commandType;
     }
 
-    public List<Auto> getBackupList() {
-        return backupList;
-    }
-
-    public List<Auto> getBackupInsertList() {
-        return backupInsertList;
+    public List<Auto> getListBackup() {
+        return listBackup;
     }
 
     public Auto getChangedAuto() {

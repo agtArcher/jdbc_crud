@@ -2,9 +2,11 @@ package auto.model;
 
 import dao.AutoDao;
 import dao.DaoFactory;
+import exception.ObjectNotFoundException;
 import model.Auto;
 import utils.Helper;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -31,7 +33,7 @@ public class AutoModelImpl implements AutoModel {
     public void addAuto(int userId, String model, int prodYear) {
         count--;
         Auto auto = new Auto(count, model, prodYear, userId);
-        operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), auto, CommandType.INSERT));
+        operationVault.push(new AutoDto(new ArrayList<>(insertAutoList), auto, CommandType.INSERT));
         insertAutoList.add(auto);
         Helper.print("Insert command added to query.");
         if (!visible)
@@ -41,14 +43,14 @@ public class AutoModelImpl implements AutoModel {
     @Override
     public void updateAuto(Auto auto) {
         if (auto.getAutoId() > 0) {
-            operationVault.push(new AutoDto(new ArrayList<>(autos), null, auto, CommandType.UPDATE));
+            operationVault.push(new AutoDto(new ArrayList<>(autos), auto, CommandType.UPDATE));
             autos = autos.stream().map(o -> o.getAutoId() == auto.getAutoId() ? auto : o).collect(Collectors.toList());
             Helper.print("Update command added to query.");
             if (!visible) {
                 visible = true;
             }
         } else if (auto.getAutoId() < 0) {
-            operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), null, CommandType.ACTION_TEMPORARY));
+            operationVault.push(new AutoDto(new ArrayList<>(insertAutoList), auto, CommandType.ACTION_TEMPORARY));
             insertAutoList = insertAutoList.stream().map(o -> o.getAutoId() == auto.getAutoId() ? auto : o).collect(Collectors.toList());
             Helper.print("Auto updated.");
             if (!visible) {
@@ -60,14 +62,14 @@ public class AutoModelImpl implements AutoModel {
     @Override
     public void deleteAuto(Auto auto) {
         if (auto.getAutoId() > 0) {
-            operationVault.push(new AutoDto(new ArrayList<>(autos), null, auto, CommandType.DELETE));
+            operationVault.push(new AutoDto(new ArrayList<>(autos), auto, CommandType.DELETE));
             autos.remove(auto);
             Helper.print("Delete command added to query.");
             if (!visible) {
                 visible = true;
             }
         } else if (auto.getAutoId() < 0) {
-            operationVault.push(new AutoDto(null, new ArrayList<>(insertAutoList), null, CommandType.ACTION_TEMPORARY));
+            operationVault.push(new AutoDto(new ArrayList<>(insertAutoList), auto, CommandType.ACTION_TEMPORARY));
             insertAutoList.remove(auto);
             Helper.print("Auto deleted.");
             if (!visible) {
@@ -79,49 +81,55 @@ public class AutoModelImpl implements AutoModel {
     //get dao object from factory and perform all queries, clear undo stack, set visible boolean to false
     @Override
     public void save(int userId) {
-        AutoDao dao = DaoFactory.getAutoDao();
-        if (!insertAutoList.isEmpty()) {
-            Helper.print("Inserting...");
-            boolean[] queryResult = dao.insertAllAuto(insertAutoList);
-            for (int i = 0; i < queryResult.length; i++) {
-                if (!queryResult[i]) {
-                    Helper.print("Insert operation failed, info about object: " + insertAutoList.get(i).toString());
+        try {
+            AutoDao dao = DaoFactory.getAutoDao();
+            if (!insertAutoList.isEmpty()) {
+                Helper.print("Inserting...");
+                boolean[] queryResult = dao.insertAllAuto(insertAutoList);
+                for (int i = 0; i < queryResult.length; i++) {
+                    if (!queryResult[i]) {
+                        Helper.print("Insert operation failed, info about object: " + insertAutoList.get(i).toString());
+                    }
                 }
+                insertAutoList.clear();
+                count = 0;
+                operationVault.removeIf(x -> x.getCommandType() == CommandType.INSERT || x.getCommandType() == CommandType.ACTION_TEMPORARY);
             }
-            insertAutoList.clear();
-            count = 0;
-            operationVault.removeIf(x -> x.getCommandType() == CommandType.INSERT || x.getCommandType() == CommandType.ACTION_TEMPORARY);
-        }
 
-        List<AutoDto> toUpdate = operationVault.stream().filter(x -> x.getCommandType() == CommandType.UPDATE).collect(Collectors.toList());
-        Collections.reverse(toUpdate);
-        if (!toUpdate.isEmpty()) {
-            Helper.print("Updating...");
-            while (!toUpdate.isEmpty()) {
-                Auto updatedAuto = toUpdate.get(0).getChangedAuto();
-                if(!dao.updateAuto(updatedAuto)) {
-                    Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
-                } else {
-                    toUpdate.removeIf(x -> x.getChangedAuto().getAutoId() == updatedAuto.getAutoId());
+            List<AutoDto> toUpdate = operationVault.stream().filter(x -> x.getCommandType() == CommandType.UPDATE).collect(Collectors.toList());
+            Collections.reverse(toUpdate);
+            if (!toUpdate.isEmpty()) {
+                Helper.print("Updating...");
+                while (!toUpdate.isEmpty()) {
+                    Auto updatedAuto = toUpdate.get(0).getChangedAuto();
+                    if(!dao.updateAuto(updatedAuto)) {
+                        Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
+                    } else {
+                        toUpdate.removeIf(x -> x.getChangedAuto().getAutoId() == updatedAuto.getAutoId());
+                    }
                 }
+                operationVault.removeIf(x -> x.getCommandType() == CommandType.UPDATE);
             }
-            operationVault.removeIf(x -> x.getCommandType() == CommandType.UPDATE);
-        }
 
-        List<AutoDto> toDelete = operationVault.stream().filter(x -> x.getCommandType() == CommandType.DELETE).collect(Collectors.toList());
-        if (!toDelete.isEmpty()) {
-            Helper.print("Deleting...");
-            for (AutoDto autoDto : toDelete) {
-                int autoId = autoDto.getChangedAuto().getAutoId();
-                if(!dao.deleteAuto(autoId)) {
-                    Helper.print("Delete operation failed, object's id: " + autoId);
+            List<AutoDto> toDelete = operationVault.stream().filter(x -> x.getCommandType() == CommandType.DELETE).collect(Collectors.toList());
+            if (!toDelete.isEmpty()) {
+                Helper.print("Deleting...");
+                for (AutoDto autoDto : toDelete) {
+                    int autoId = autoDto.getChangedAuto().getAutoId();
+                    if(!dao.deleteAuto(autoId)) {
+                        Helper.print("Delete operation failed, object's id: " + autoId);
+                    }
                 }
             }
+            autos = DaoFactory.getUserDao().getAutoForUser(userId);
+            operationVault.clear();
+            visible = false;
+            Helper.print("Saved!");
+
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
+            Helper.print("Save operation failed. Please, try again.");
         }
-        operationVault.clear();
-        visible = false;
-        Helper.print("Saved!");
-        autos = DaoFactory.getUserDao().getAutoForUser(userId);
     }
 
     //return autos list to previous state, if change stack will empty, set visible to false
@@ -131,11 +139,11 @@ public class AutoModelImpl implements AutoModel {
         switch (undoAutoDto.getCommandType()) {
             case INSERT:
             case ACTION_TEMPORARY:
-                insertAutoList = undoAutoDto.getBackupInsertList();
+                insertAutoList = undoAutoDto.getListBackup();
                 break;
             case DELETE:
             case UPDATE:
-                autos = undoAutoDto.getBackupList();
+                autos = undoAutoDto.getListBackup();
                 break;
         }
     }
@@ -162,7 +170,7 @@ public class AutoModelImpl implements AutoModel {
 
     @Override
     //get copy of auto by id from list for correct save list in listStack
-    public Auto getAutoById(int autoId) {
+    public Auto getAutoById(int autoId) throws ObjectNotFoundException {
         List<Auto> updateAutoList = null;
         if (autoId > 0) {
             updateAutoList = autos.stream().filter(i -> i.getAutoId() == autoId).collect(Collectors.toList());
@@ -171,7 +179,7 @@ public class AutoModelImpl implements AutoModel {
         }
 
         if (updateAutoList == null || updateAutoList.isEmpty()) {
-            return null;
+            throw new ObjectNotFoundException();
         }
         Auto origAuto = updateAutoList.get(0);
         return new Auto(origAuto.getAutoId(), origAuto.getModel(), origAuto.getProdYear(), origAuto.getUserId());

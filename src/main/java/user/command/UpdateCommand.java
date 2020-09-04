@@ -3,10 +3,12 @@ package user.command;
 import dao.UserDao;
 import dao.DaoFactory;
 import auto.AutoExplorer;
+import exception.ObjectNotFoundException;
 import model.User;
 import utils.Helper;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 class UpdateCommand implements Command {
     @Override
@@ -16,10 +18,6 @@ class UpdateCommand implements Command {
             UserDao dao = DaoFactory.getUserDao();
             User currentUser = dao.getUser(userId);
             boolean hasChanged = false;
-            if (currentUser == null) {
-                Helper.print("User not found. Cancel operation");
-                return;
-            }
             if (Helper.confirm("Modify first name? y/n\nCurrent first name: " + currentUser.getFirstName())) {
                 String firstName = Helper.getString("Enter new value for first name:");
                 currentUser.setFirstName(firstName);
@@ -48,8 +46,14 @@ class UpdateCommand implements Command {
             } else if(Helper.confirm("Update autos list? y/n")) {
                 new AutoExplorer(currentUser.getAutos(), userId).explore();
             }
-        } catch (IOException e) {
+        } catch (ObjectNotFoundException e) {
+            Helper.print("User for update not found. Cancel operation");
+
+        }
+        catch (IOException e) {
             Helper.print("An exception occurred while updating user. Please, try again");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
 }

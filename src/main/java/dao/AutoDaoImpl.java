@@ -10,12 +10,7 @@ import java.util.Collection;
 
 class AutoDaoImpl implements AutoDao {
     @Override
-    public boolean insertAuto(Auto auto) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public boolean insertAuto(Auto auto) throws SQLException {
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
@@ -25,19 +20,11 @@ class AutoDaoImpl implements AutoDao {
             int result = preparedStatement.executeUpdate();
             return result > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
     @Override
-    public boolean[] insertAllAuto(Collection<Auto> autos) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public boolean[] insertAllAuto(Collection<Auto> autos) throws SQLException {
         boolean[] queryResults = new boolean[autos.size()];
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement preparedStatement = connection.prepareStatement("insert into autos (model, prod_year, user_id) values (?,?,?)");
@@ -53,19 +40,12 @@ class AutoDaoImpl implements AutoDao {
                 queryResults[i] = batchResult[i] > 0;
             }
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return queryResults;
     }
 
     @Override
-    public boolean updateAuto(Auto auto) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public boolean updateAuto(Auto auto) throws SQLException {
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement preparedStatement = connection.prepareStatement("update autos set model = ?, prod_year = ? where auto_id = ?");
@@ -75,19 +55,11 @@ class AutoDaoImpl implements AutoDao {
             int result = preparedStatement.executeUpdate();
             return result > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
     @Override
-    public boolean deleteAuto(int autoId) {
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public boolean deleteAuto(int autoId) throws SQLException {
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement preparedStatement = connection.prepareStatement("delete from autos where auto_id = ?");
@@ -95,9 +67,6 @@ class AutoDaoImpl implements AutoDao {
             int result = preparedStatement.executeUpdate();
             return result > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 }

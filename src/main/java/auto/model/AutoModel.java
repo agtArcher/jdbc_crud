@@ -1,7 +1,9 @@
 package auto.model;
 
+import exception.ObjectNotFoundException;
 import model.Auto;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public interface AutoModel {
@@ -13,6 +15,6 @@ public interface AutoModel {
     void checkUnsavedOperations(int userId);
     boolean isVisible();
     List<Auto> getInsertList();
-    Auto getAutoById(int autoId);
+    Auto getAutoById(int autoId) throws ObjectNotFoundException;
     List<Auto> getAutos();
 }

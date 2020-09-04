@@ -1,9 +1,11 @@
 package auto.controller;
 
 import auto.AutoExplorer;
+import exception.ObjectNotFoundException;
 import model.Auto;
 import auto.model.AutoModel;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public class AutoController {
@@ -24,7 +26,7 @@ public class AutoController {
         executor.updateList(autoModel.getAutos());
     }
 
-    public Auto getAutoById(int autoId) {
+    public Auto getAutoById(int autoId) throws ObjectNotFoundException {
         return autoModel.getAutoById(autoId);
     }
 

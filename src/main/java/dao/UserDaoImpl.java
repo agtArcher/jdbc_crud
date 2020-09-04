@@ -1,5 +1,6 @@
 package dao;
 
+import exception.ObjectNotFoundException;
 import model.Auto;
 import model.User;
 
@@ -12,7 +13,7 @@ class UserDaoImpl implements UserDao {
     UserDaoImpl() {
     }
 
-    public int saveUser(User user) {
+    public int saveUser(User user) throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -44,14 +45,12 @@ class UserDaoImpl implements UserDao {
             }
 
 
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return -1;
     }
 
     @Override
-    public boolean updateUser(User user) {
+    public boolean updateUser(User user) throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -78,14 +77,11 @@ class UserDaoImpl implements UserDao {
             }
             return result > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
     @Override
-    public boolean deleteUser(int userId) {
+    public boolean deleteUser(int userId) throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -103,19 +99,11 @@ class UserDaoImpl implements UserDao {
             }
             return result > 0;
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
         }
     }
 
-    public User getUser(int id) {
-        User user = null;
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    public User getUser(int id) throws ObjectNotFoundException, SQLException {
+        User user;
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement preparedStatement = connection.prepareStatement("select * from users where user_id = ?");
@@ -128,22 +116,17 @@ class UserDaoImpl implements UserDao {
 
                 List<Auto> autos = getAutoForUser(id);
                 user = new User(id, firstName, lastName, age, autos);
+            } else {
+                throw new ObjectNotFoundException();
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return user;
     }
 
 
 
-    public List<User> getAllUsers() {
+    public List<User> getAllUsers() throws SQLException {
         List<User> users = new ArrayList<>();
-        try {
-            Class.forName("org.postgresql.Driver");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
         try (Connection connection = DriverManager.getConnection("jdbc:postgresql://localhost:5432/postgres", "postgres", "Archer215")) {
             PreparedStatement userStatement = connection.prepareStatement("select * from users");
@@ -161,8 +144,6 @@ class UserDaoImpl implements UserDao {
                 User user = new User(user_id, firstName, lastName, age, autos);
                 users.add(user);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
         return users;
     }
@@ -179,7 +160,7 @@ class UserDaoImpl implements UserDao {
         return autos;
     }
 
-    public List<Auto> getAutoForUser(int userId) {
+    public List<Auto> getAutoForUser(int userId) throws SQLException {
         try {
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
@@ -192,9 +173,6 @@ class UserDaoImpl implements UserDao {
             ResultSet autoSet = autoStatement.executeQuery();
             return getAutos(autoSet, userId);
 
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return new ArrayList<>();
         }
     }
 }

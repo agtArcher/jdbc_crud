@@ -6,6 +6,7 @@ import model.User;
 import utils.Helper;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 class InsertCommand implements Command {
     @Override
@@ -26,6 +27,8 @@ class InsertCommand implements Command {
             }
         } catch (IOException e) {
             Helper.print("An exception occurred while inserting user. Please, try again.");
+        } catch (SQLException throwables) {
+            throwables.printStackTrace();
         }
     }
 }
