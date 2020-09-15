@@ -4,8 +4,10 @@ import dao.AutoDao;
 import dao.DaoFactory;
 import exception.ObjectNotFoundException;
 import model.Auto;
+import user.command.Command;
 import utils.Helper;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +16,8 @@ import java.util.Stack;
 import java.util.stream.Collectors;
 
 public class AutoModelImpl implements AutoModel {
+
+    private final AutoDao autoDao;
     //contains backup list depends from command type and changed auto inside
     private final Stack<AutoDto> operationVault = new Stack<>();
     //list for unsaved autos to separate update and delete
@@ -26,6 +30,7 @@ public class AutoModelImpl implements AutoModel {
 
     public AutoModelImpl(List<Auto> autos) {
         this.autos = autos;
+        autoDao = DaoFactory.getAutoDao();
     }
 
     //request model and prodYear from user, create new Auto and add to temp list for separate u,d actions
@@ -81,54 +86,66 @@ public class AutoModelImpl implements AutoModel {
     //get dao object from factory and perform all queries, clear undo stack, set visible boolean to false
     @Override
     public void save(int userId) {
-        try {
-            AutoDao dao = DaoFactory.getAutoDao();
-            if (!insertAutoList.isEmpty()) {
-                Helper.print("Inserting...");
-                boolean[] queryResult = dao.insertAllAuto(insertAutoList);
-                for (int i = 0; i < queryResult.length; i++) {
-                    if (!queryResult[i]) {
-                        Helper.print("Insert operation failed, info about object: " + insertAutoList.get(i).toString());
+        try(Connection connection = autoDao.getConnection()) {
+            try {
+                connection.setAutoCommit(false);
+                if (!insertAutoList.isEmpty()) {
+                    Helper.print("Inserting...");
+                    boolean[] queryResult = autoDao.insertAllAuto(connection,insertAutoList);
+                    for (int i = 0; i < queryResult.length; i++) {
+                        if (!queryResult[i]) {
+                            Helper.print("Insert operation failed, info about object: " + insertAutoList.get(i).toString() + "\nRollback changes...");
+                            connection.rollback();
+                            return;
+                        }
                     }
                 }
+
+                List<AutoDto> toUpdate = operationVault.stream().filter(x -> x.getCommandType() == CommandType.UPDATE).collect(Collectors.toList());
+                Collections.reverse(toUpdate);
+                if (!toUpdate.isEmpty()) {
+                    Helper.print("Updating...");
+                    while (!toUpdate.isEmpty()) {
+                        Auto updatedAuto = toUpdate.get(0).getChangedAuto();
+                        if(!autoDao.updateAuto(connection ,updatedAuto)) {
+                            Helper.print("Update operation failed, info about object: " + updatedAuto.toString() + "\nRollback changes...");
+                            connection.rollback();
+                            return;
+                        } else {
+                            toUpdate.removeIf(x -> x.getChangedAuto().getAutoId() == updatedAuto.getAutoId());
+                        }
+                    }
+                }
+
+                List<AutoDto> toDelete = operationVault.stream().filter(x -> x.getCommandType() == CommandType.DELETE).collect(Collectors.toList());
+                if (!toDelete.isEmpty()) {
+                    Helper.print("Deleting...");
+                    for (AutoDto autoDto : toDelete) {
+                        int autoId = autoDto.getChangedAuto().getAutoId();
+                        if(!autoDao.deleteAuto(autoId)) {
+                            Helper.print("Delete operation failed, object's id: " + autoId + "\nRollback changes...");
+                            connection.rollback();
+                            return;
+                        }
+                    }
+                }
+                connection.commit();
+
                 insertAutoList.clear();
                 count = 0;
-                operationVault.removeIf(x -> x.getCommandType() == CommandType.INSERT || x.getCommandType() == CommandType.ACTION_TEMPORARY);
-            }
+                autos = DaoFactory.getUserDao().getAutoForUser(userId);
+                operationVault.clear();
+                visible = false;
+                Helper.print("Saved!");
 
-            List<AutoDto> toUpdate = operationVault.stream().filter(x -> x.getCommandType() == CommandType.UPDATE).collect(Collectors.toList());
-            Collections.reverse(toUpdate);
-            if (!toUpdate.isEmpty()) {
-                Helper.print("Updating...");
-                while (!toUpdate.isEmpty()) {
-                    Auto updatedAuto = toUpdate.get(0).getChangedAuto();
-                    if(!dao.updateAuto(updatedAuto)) {
-                        Helper.print("Update operation failed, info about object: " + updatedAuto.toString());
-                    } else {
-                        toUpdate.removeIf(x -> x.getChangedAuto().getAutoId() == updatedAuto.getAutoId());
-                    }
-                }
-                operationVault.removeIf(x -> x.getCommandType() == CommandType.UPDATE);
+            } catch (SQLException throwables) {
+                connection.rollback();
+                throwables.printStackTrace();
+                Helper.print("Save operation failed. Please, try again.");
             }
-
-            List<AutoDto> toDelete = operationVault.stream().filter(x -> x.getCommandType() == CommandType.DELETE).collect(Collectors.toList());
-            if (!toDelete.isEmpty()) {
-                Helper.print("Deleting...");
-                for (AutoDto autoDto : toDelete) {
-                    int autoId = autoDto.getChangedAuto().getAutoId();
-                    if(!dao.deleteAuto(autoId)) {
-                        Helper.print("Delete operation failed, object's id: " + autoId);
-                    }
-                }
-            }
-            autos = DaoFactory.getUserDao().getAutoForUser(userId);
-            operationVault.clear();
-            visible = false;
-            Helper.print("Saved!");
-
         } catch (SQLException throwables) {
+            Helper.print("Error while saving. Please, try again");
             throwables.printStackTrace();
-            Helper.print("Save operation failed. Please, try again.");
         }
     }
 
