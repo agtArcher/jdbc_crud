@@ -26,13 +26,21 @@ public class AutoExplorer {
         int respond;
         while (true) {
             boolean visible = controller.isVisible();
+            StringBuilder interfaceTextBuilder = new StringBuilder();
+
+            interfaceTextBuilder.append("Actions:\n(1) Add new auto\n");
+
             if (autos.isEmpty() && controller.getInsertList().isEmpty()) {
+
                 if (visible) {
-                    Helper.print("Actions:\n(1)Add new auto\n(2) Save changes\n(3) Undo last change\n(0) Return");
+                    interfaceTextBuilder.append("(2) Save changes\n(3) Undo last change\n(0) Return");
                 } else {
-                    Helper.print("Actions:\n(1)Add new auto\n(0) Return");
+                    interfaceTextBuilder.append("(0) Return");
                 }
+
+                Helper.print(interfaceTextBuilder.toString());
                 respond = Helper.getInteger();
+
                 switch (respond) {
                     case 1:
                         addAuto(userId);
@@ -56,22 +64,29 @@ public class AutoExplorer {
             }
             else {
                 Helper.print("Auto's belongs to user with id = " + userId);
+
                 if (!autos.isEmpty()) {
                     Helper.print("Saved: ");
                     autos.forEach(Helper::print);
                 }
+
                 if (!controller.getInsertList().isEmpty()) {
                     Helper.print("Unsaved: ");
                     controller.getInsertList().forEach(Helper::print);
                     Helper.print("auto's id is temporary while not saved");
                 }
+
+                interfaceTextBuilder.append("(2) Update info about auto\n(3) Delete auto\n");
+
                 if (visible) {
-                    Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(4) Save changes\n(5) Undo last change\n(0) Return");
+                    interfaceTextBuilder.append("(4) Save changes\n(5) Undo last change\n(0) Return");
                 } else {
-                    Helper.print("Actions:\n(1) Add new auto\n(2) Update info about auto\n(3) Delete auto\n(0) Return");
+                    interfaceTextBuilder.append("(0) Return");
                 }
 
+                Helper.print(interfaceTextBuilder.toString());
                 respond = Helper.getInteger();
+
                 switch (respond) {
                     case 1:
                         addAuto(userId);
@@ -131,6 +146,7 @@ public class AutoExplorer {
                     hadChanged = true;
                 }
             }
+
             if (Helper.confirm("Change production year? y/n")) {
                 int prodYear = Helper.getInteger("Enter new value for production year");
                 if (toUpdate.getProdYear() != prodYear) {
@@ -139,6 +155,7 @@ public class AutoExplorer {
                         hadChanged = true;
                 }
             }
+
             if (hadChanged) {
                 controller.updateAuto(toUpdate);
             } else {
